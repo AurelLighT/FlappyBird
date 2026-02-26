@@ -13,8 +13,8 @@ const GRAVITY = 0.15; // Dikurangi dari 0.25
 const JUMP = -4;      // Disesuaikan dari -5
 const PIPE_WIDTH = 60;
 const PIPE_GAP = 180; // Diperlebar dari 150 agar lebih mudah lewat
-const PIPE_SPEED = 1.5; // Diperlambat dari 2
-const PIPE_SPAWN_RATE = 120; // Ditambah dari 100 agar jarak antar pipa lebih jauh
+const INITIAL_PIPE_SPEED = 1.5; 
+const INITIAL_PIPE_SPAWN_RATE = 120;
 
 // Game State
 let bird = { x: 50, y: height / 2, v: 0, r: 15 };
@@ -22,6 +22,8 @@ let pipes = [];
 let score = 0;
 let gameActive = false;
 let frameCount = 0;
+let pipeSpeed = INITIAL_PIPE_SPEED;
+let pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
 
 // Audio Context for Procedural Sound Effects
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -94,6 +96,8 @@ function resetGame() {
     scoreEl.textContent = '0';
     gameActive = true;
     frameCount = 1; // Mulai dari 1 agar tidak langsung spawn di frame 0
+    pipeSpeed = INITIAL_PIPE_SPEED;
+    pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
 }
 
 function update() {
@@ -109,10 +113,10 @@ function update() {
     }
 
     // Pipes logic
-    if (frameCount % PIPE_SPAWN_RATE === 0) spawnPipe();
+    if (frameCount % Math.floor(pipeSpawnRate) === 0) spawnPipe();
 
     pipes.forEach((pipe, index) => {
-        pipe.x -= PIPE_SPEED;
+        pipe.x -= pipeSpeed;
 
         // Collision detection
         if (
@@ -129,6 +133,14 @@ function update() {
             pipe.passed = true;
             scoreEl.textContent = score;
             playScoreSound();
+
+            // Tingkatkan kesulitan setiap 10 poin
+            if (score % 10 === 0) {
+                pipeSpeed += 0.25;
+                // Kurangi spawn rate agar jarak antar pipa tetap stabil meskipun lebih cepat
+                pipeSpawnRate = Math.max(60, pipeSpawnRate - 10); 
+                logMessage(`Speed Up! New Speed: ${pipeSpeed}`);
+            }
         }
 
         // Remove off-screen pipes
@@ -206,6 +218,10 @@ function loop() {
     update();
     draw();
     requestAnimationFrame(loop);
+}
+
+function logMessage(msg) {
+    console.log(msg);
 }
 
 loop();
