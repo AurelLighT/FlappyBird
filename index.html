@@ -44,6 +44,12 @@
     <div id="game-container">
         <div id="ui">0</div>
         <canvas id="gameCanvas"></canvas>
+        <div id="game-over-menu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; text-align: center; color: white; width: 80%;">
+            <h2 style="margin-top: 0;">Game Over!</h2>
+            <p id="final-score">Score: 0</p>
+            <button id="btn-restart-fresh" style="display: block; width: 100%; padding: 10px; margin: 10px 0; background: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Ulang dari Awal (Speed 1.5)</button>
+            <button id="btn-restart-current" style="display: block; width: 100%; padding: 10px; margin: 10px 0; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Lanjut Speed Terakhir</button>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>

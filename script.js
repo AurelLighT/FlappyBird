@@ -1,6 +1,10 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('ui');
+const gameOverMenu = document.getElementById('game-over-menu');
+const finalScoreEl = document.getElementById('final-score');
+const btnRestartFresh = document.getElementById('btn-restart-fresh');
+const btnRestartCurrent = document.getElementById('btn-restart-current');
 
 // Set canvas size (mobile friendly)
 const width = Math.min(window.innerWidth, 400);
@@ -89,15 +93,20 @@ function spawnPipe() {
     lastPipeTop = topHeight; // Update posisi untuk pipa berikutnya
 }
 
-function resetGame() {
+function resetGame(keepSpeed = false) {
     bird = { x: 50, y: height / 2, v: 0, r: 15 };
     pipes = [];
     score = 0;
     scoreEl.textContent = '0';
     gameActive = true;
-    frameCount = 1; // Mulai dari 1 agar tidak langsung spawn di frame 0
-    pipeSpeed = INITIAL_PIPE_SPEED;
-    pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
+    frameCount = 1; 
+    
+    if (!keepSpeed) {
+        pipeSpeed = INITIAL_PIPE_SPEED;
+        pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
+    }
+    
+    gameOverMenu.style.display = 'none';
 }
 
 function update() {
@@ -191,6 +200,11 @@ function draw() {
 function gameOver() {
     if (gameActive) playHitSound();
     gameActive = false;
+    
+    // Tampilkan menu game over
+    finalScoreEl.textContent = `Score: ${score} (Current Speed: ${pipeSpeed.toFixed(2)})`;
+    gameOverMenu.style.display = 'block';
+    
     setTimeout(() => {
         frameCount = 0;
         draw();
@@ -211,13 +225,30 @@ function handleInput() {
 
 // Controls
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.key === ' ') handleInput();
+    if (e.code === 'Space' || e.key === ' ') {
+        if (gameActive) handleInput();
+    }
 });
-canvas.addEventListener('mousedown', handleInput);
+
+canvas.addEventListener('mousedown', () => {
+    if (gameActive) handleInput();
+});
+
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    handleInput();
+    if (gameActive) handleInput();
 });
+
+// Restart Buttons Logic
+btnRestartFresh.onclick = (e) => {
+    e.stopPropagation();
+    resetGame(false);
+};
+
+btnRestartCurrent.onclick = (e) => {
+    e.stopPropagation();
+    resetGame(true);
+};
 
 function loop() {
     update();
