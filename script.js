@@ -23,6 +23,53 @@ let score = 0;
 let gameActive = false;
 let frameCount = 0;
 
+// Audio Context for Procedural Sound Effects
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(frequency, type, duration, volume) {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+
+    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+}
+
+function playJumpSound() {
+    playSound(400, 'triangle', 0.1, 0.1);
+}
+
+function playScoreSound() {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(1100, audioCtx.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.2);
+}
+
+function playHitSound() {
+    playSound(150, 'sawtooth', 0.3, 0.1);
+}
+
 function spawnPipe() {
     const minHeight = 50;
     const maxHeight = height - PIPE_GAP - minHeight;
@@ -71,6 +118,7 @@ function update() {
             score++;
             pipe.passed = true;
             scoreEl.textContent = score;
+            playScoreSound();
         }
 
         // Remove off-screen pipes
@@ -114,6 +162,7 @@ function draw() {
 }
 
 function gameOver() {
+    if (gameActive) playHitSound();
     gameActive = false;
     setTimeout(() => {
         frameCount = 0;
@@ -122,10 +171,14 @@ function gameOver() {
 }
 
 function handleInput() {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
     if (!gameActive) {
         resetGame();
     } else {
         bird.v = JUMP;
+        playJumpSound();
     }
 }
 
