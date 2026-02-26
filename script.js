@@ -139,6 +139,11 @@ function update() {
                 pipeSpeed += 0.25;
                 // Kurangi spawn rate agar jarak antar pipa tetap stabil meskipun lebih cepat
                 pipeSpawnRate = Math.max(60, pipeSpawnRate - 10); 
+                
+                // RESET frameCount agar perhitungan modulo % pipeSpawnRate 
+                // konsisten dengan nilai pipeSpawnRate yang baru
+                frameCount = 1; 
+                
                 logMessage(`Speed Up! New Speed: ${pipeSpeed}`);
             }
         }
