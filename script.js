@@ -226,17 +226,17 @@ function handleInput() {
 // Controls
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' || e.key === ' ') {
-        if (gameActive) handleInput();
+        handleInput();
     }
 });
 
 canvas.addEventListener('mousedown', () => {
-    if (gameActive) handleInput();
+    handleInput();
 });
 
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    if (gameActive) handleInput();
+    handleInput();
 });
 
 // Restart Buttons Logic
