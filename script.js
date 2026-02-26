@@ -70,11 +70,21 @@ function playHitSound() {
     playSound(150, 'sawtooth', 0.3, 0.1);
 }
 
+let lastPipeTop = height / 2; // Simpan posisi pipa sebelumnya
+
 function spawnPipe() {
     const minHeight = 50;
     const maxHeight = height - PIPE_GAP - minHeight;
-    const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+    
+    // Tentukan batas atas dan bawah berdasarkan pipa sebelumnya agar tidak terlalu jauh melompatnya
+    const maxChange = 150; // Batas maksimal perubahan posisi lubang (px)
+    let low = Math.max(minHeight, lastPipeTop - maxChange);
+    let high = Math.min(maxHeight, lastPipeTop + maxChange);
+    
+    const topHeight = Math.floor(Math.random() * (high - low + 1)) + low;
+    
     pipes.push({ x: width, top: topHeight, passed: false });
+    lastPipeTop = topHeight; // Update posisi untuk pipa berikutnya
 }
 
 function resetGame() {
