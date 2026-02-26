@@ -36,9 +36,7 @@ function resetGame() {
     score = 0;
     scoreEl.textContent = '0';
     gameActive = true;
-    frameCount = 0; // Pastikan frameCount mulai dari 0 saat reset
-    // Jangan panggil spawnPipe() di sini karena akan dipanggil otomatis oleh loop
-    // saat frameCount % PIPE_SPAWN_RATE === 0
+    frameCount = 1; // Mulai dari 1 agar tidak langsung spawn di frame 0
 }
 
 function update() {
