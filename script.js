@@ -9,11 +9,12 @@ canvas.width = width;
 canvas.height = height;
 
 // Game Constants
-const GRAVITY = 0.25;
-const JUMP = -5;
+const GRAVITY = 0.15; // Dikurangi dari 0.25
+const JUMP = -4;      // Disesuaikan dari -5
 const PIPE_WIDTH = 60;
-const PIPE_GAP = 150;
-const PIPE_SPEED = 2;
+const PIPE_GAP = 180; // Diperlebar dari 150 agar lebih mudah lewat
+const PIPE_SPEED = 1.5; // Diperlambat dari 2
+const PIPE_SPAWN_RATE = 120; // Ditambah dari 100 agar jarak antar pipa lebih jauh
 
 // Game State
 let bird = { x: 50, y: height / 2, v: 0, r: 15 };
@@ -51,7 +52,7 @@ function update() {
     }
 
     // Pipes logic
-    if (frameCount % 100 === 0) spawnPipe();
+    if (frameCount % PIPE_SPAWN_RATE === 0) spawnPipe();
 
     pipes.forEach((pipe, index) => {
         pipe.x -= PIPE_SPEED;
