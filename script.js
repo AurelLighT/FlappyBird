@@ -12,22 +12,23 @@ const height = Math.min(window.innerHeight, 600);
 canvas.width = width;
 canvas.height = height;
 
-// Game Constants
-const GRAVITY = 0.15; // Dikurangi dari 0.25
-const JUMP = -4;      // Disesuaikan dari -5
+// Game Constants (Nilai per detik)
+const GRAVITY = 1000; 
+const JUMP = -350;     
 const PIPE_WIDTH = 60;
-const PIPE_GAP = 180; // Diperlebar dari 150 agar lebih mudah lewat
-const INITIAL_PIPE_SPEED = 1.5; 
-const INITIAL_PIPE_SPAWN_RATE = 120;
+const PIPE_GAP = 180;
+const INITIAL_PIPE_SPEED = 180; 
+const INITIAL_PIPE_SPAWN_INTERVAL = 1500; // ms
 
 // Game State
 let bird = { x: 50, y: height / 2, v: 0, r: 15 };
 let pipes = [];
 let score = 0;
 let gameActive = false;
-let frameCount = 0;
 let pipeSpeed = INITIAL_PIPE_SPEED;
-let pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
+let pipeSpawnInterval = INITIAL_PIPE_SPAWN_INTERVAL;
+let lastPipeSpawn = 0;
+let lastTime = 0;
 
 // Audio Context for Procedural Sound Effects
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -50,47 +51,33 @@ function playSound(frequency, type, duration, volume) {
     oscillator.stop(audioCtx.currentTime + duration);
 }
 
-function playJumpSound() {
-    playSound(400, 'triangle', 0.1, 0.1);
-}
-
+function playJumpSound() { playSound(400, 'triangle', 0.1, 0.1); }
 function playScoreSound() {
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(1100, audioCtx.currentTime + 0.1);
-
     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + 0.2);
 }
+function playHitSound() { playSound(150, 'sawtooth', 0.3, 0.1); }
 
-function playHitSound() {
-    playSound(150, 'sawtooth', 0.3, 0.1);
-}
-
-let lastPipeTop = height / 2; // Simpan posisi pipa sebelumnya
+let lastPipeTop = height / 2;
 
 function spawnPipe() {
     const minHeight = 50;
     const maxHeight = height - PIPE_GAP - minHeight;
-    
-    // Tentukan batas atas dan bawah berdasarkan pipa sebelumnya agar tidak terlalu jauh melompatnya
-    const maxChange = 150; // Batas maksimal perubahan posisi lubang (px)
+    const maxChange = 150;
     let low = Math.max(minHeight, lastPipeTop - maxChange);
     let high = Math.min(maxHeight, lastPipeTop + maxChange);
-    
     const topHeight = Math.floor(Math.random() * (high - low + 1)) + low;
-    
     pipes.push({ x: width, top: topHeight, passed: false });
-    lastPipeTop = topHeight; // Update posisi untuk pipa berikutnya
+    lastPipeTop = topHeight;
 }
 
 function resetGame(keepSpeed = false) {
@@ -99,95 +86,72 @@ function resetGame(keepSpeed = false) {
     score = 0;
     scoreEl.textContent = '0';
     gameActive = true;
-    frameCount = 1; 
-    
+    lastPipeSpawn = performance.now();
     if (!keepSpeed) {
         pipeSpeed = INITIAL_PIPE_SPEED;
-        pipeSpawnRate = INITIAL_PIPE_SPAWN_RATE;
+        pipeSpawnInterval = INITIAL_PIPE_SPAWN_INTERVAL;
     }
-    
     gameOverMenu.style.display = 'none';
 }
 
-function update() {
+function update(dt) {
     if (!gameActive) return;
 
-    // Bird physics
-    bird.v += GRAVITY;
-    bird.y += bird.v;
+    bird.v += GRAVITY * dt;
+    bird.y += bird.v * dt;
 
-    // Boundary check
     if (bird.y + bird.r > height || bird.y - bird.r < 0) {
         gameOver();
     }
 
-    // Pipes logic
-    if (frameCount % Math.floor(pipeSpawnRate) === 0) spawnPipe();
+    const now = performance.now();
+    if (now - lastPipeSpawn > pipeSpawnInterval) {
+        spawnPipe();
+        lastPipeSpawn = now;
+    }
 
     pipes.forEach((pipe, index) => {
-        pipe.x -= pipeSpeed;
+        pipe.x -= pipeSpeed * dt;
 
-        // Collision detection
-        if (
-            bird.x + bird.r > pipe.x &&
+        if (bird.x + bird.r > pipe.x &&
             bird.x - bird.r < pipe.x + PIPE_WIDTH &&
-            (bird.y - bird.r < pipe.top || bird.y + bird.r > pipe.top + PIPE_GAP)
-        ) {
+            (bird.y - bird.r < pipe.top || bird.y + bird.r > pipe.top + PIPE_GAP)) {
             gameOver();
         }
 
-        // Score check
         if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
             score++;
             pipe.passed = true;
             scoreEl.textContent = score;
             playScoreSound();
-
-            // Tingkatkan kesulitan setiap 10 poin
             if (score % 10 === 0) {
-                pipeSpeed += 0.25;
-                // Kurangi spawn rate agar jarak antar pipa tetap stabil meskipun lebih cepat
-                pipeSpawnRate = Math.max(60, pipeSpawnRate - 10); 
-                
-                // RESET frameCount agar perhitungan modulo % pipeSpawnRate 
-                // konsisten dengan nilai pipeSpawnRate yang baru
-                frameCount = 1; 
-                
-                logMessage(`Speed Up! New Speed: ${pipeSpeed}`);
+                pipeSpeed += 30;
+                pipeSpawnInterval = Math.max(800, pipeSpawnInterval - 100);
             }
         }
-
-        // Remove off-screen pipes
         if (pipe.x + PIPE_WIDTH < 0) pipes.splice(index, 1);
     });
-
-    frameCount++;
 }
 
 function draw() {
-    // Clear background
     ctx.fillStyle = '#70c5ce';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw Pipes
     pipes.forEach(pipe => {
         ctx.fillStyle = '#2ecc71';
-        // Top pipe
         ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
         ctx.strokeRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
-        // Bottom pipe
         ctx.fillRect(pipe.x, pipe.top + PIPE_GAP, PIPE_WIDTH, height - (pipe.top + PIPE_GAP));
         ctx.strokeRect(pipe.x, pipe.top + PIPE_GAP, PIPE_WIDTH, height - (pipe.top + PIPE_GAP));
     });
 
-    // Draw Bird
     ctx.fillStyle = '#f1c40f';
     ctx.beginPath();
     ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    if (!gameActive && frameCount === 0) {
+    if (!gameActive && pipes.length === 0) {
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(0,0,width,height);
         ctx.fillStyle = 'white';
@@ -200,64 +164,34 @@ function draw() {
 function gameOver() {
     if (gameActive) playHitSound();
     gameActive = false;
-    
-    // Tampilkan menu game over
-    finalScoreEl.textContent = `Score: ${score} (Current Speed: ${pipeSpeed.toFixed(2)})`;
+    finalScoreEl.textContent = `Score: ${score}`;
     gameOverMenu.style.display = 'block';
-    
-    setTimeout(() => {
-        frameCount = 0;
-        draw();
-    }, 100);
 }
 
 function handleInput() {
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-    if (!gameActive) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!gameActive && gameOverMenu.style.display === 'none') {
         resetGame();
-    } else {
+    } else if (gameActive) {
         bird.v = JUMP;
         playJumpSound();
     }
 }
 
-// Controls
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.key === ' ') {
-        handleInput();
-    }
-});
+window.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.key === ' ') handleInput(); });
+canvas.addEventListener('mousedown', handleInput);
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); });
 
-canvas.addEventListener('mousedown', () => {
-    handleInput();
-});
+btnRestartFresh.onclick = (e) => { e.stopPropagation(); resetGame(false); };
+btnRestartCurrent.onclick = (e) => { e.stopPropagation(); resetGame(true); };
 
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    handleInput();
-});
-
-// Restart Buttons Logic
-btnRestartFresh.onclick = (e) => {
-    e.stopPropagation();
-    resetGame(false);
-};
-
-btnRestartCurrent.onclick = (e) => {
-    e.stopPropagation();
-    resetGame(true);
-};
-
-function loop() {
-    update();
+function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000;
+    if (dt > 0.1) dt = 0.1; // Safety cap
+    update(dt);
     draw();
+    lastTime = timestamp;
     requestAnimationFrame(loop);
 }
-
-function logMessage(msg) {
-    console.log(msg);
-}
-
-loop();
+requestAnimationFrame(loop);
