@@ -17,8 +17,8 @@ const GRAVITY = 1100;
 const JUMP = -380;     
 const PIPE_WIDTH = 60;
 const PIPE_GAP = 175;
-const INITIAL_PIPE_SPEED = 220; 
-const INITIAL_PIPE_SPAWN_INTERVAL = 1300; // ms
+const INITIAL_PIPE_SPEED = 275; 
+const INITIAL_PIPE_SPAWN_INTERVAL = 1040; // ms
 
 // Game State
 let bird = { x: 50, y: height / 2, v: 0, r: 15 };
